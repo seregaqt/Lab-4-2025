@@ -1,7 +1,6 @@
 package functions;
 
 import java.io.*;
-import java.util.StringTokenizer;
 
 public class TabulatedFunctions {
     
@@ -19,11 +18,7 @@ public class TabulatedFunctions {
         }
         
         if (leftX < function.getLeftDomainBorder() || rightX > function.getRightDomainBorder()) {
-            throw new IllegalArgumentException(
-                "Границы табулирования [" + leftX + ", " + rightX + "] " +
-                "выходят за область определения функции [" + 
-                function.getLeftDomainBorder() + ", " + function.getRightDomainBorder() + "]"
-            );
+            throw new IllegalArgumentException("Границы табулирования выходят за область определения функции");
         }
         
         double[] values = new double[pointsCount];
@@ -96,7 +91,6 @@ public class TabulatedFunctions {
     public static TabulatedFunction readTabulatedFunction(Reader in) {
         StreamTokenizer tokenizer = new StreamTokenizer(in);
         try {
-            // Настраиваем токенизатор для чтения чисел
             tokenizer.resetSyntax();
             tokenizer.wordChars('0', '9');
             tokenizer.wordChars('.', '.');
@@ -109,7 +103,6 @@ public class TabulatedFunctions {
             tokenizer.whitespaceChars('\r', '\r');
             tokenizer.parseNumbers();
             
-            // Читаем количество точек
             if (tokenizer.nextToken() != StreamTokenizer.TT_NUMBER) {
                 throw new RuntimeException("Ожидалось количество точек");
             }
@@ -119,7 +112,6 @@ public class TabulatedFunctions {
                 throw new RuntimeException("Некорректное количество точек: " + pointsCount);
             }
             
-            // Читаем координаты точек
             double[] xValues = new double[pointsCount];
             double[] yValues = new double[pointsCount];
             
@@ -139,48 +131,6 @@ public class TabulatedFunctions {
             
         } catch (IOException e) {
             throw new RuntimeException("Ошибка при чтении функции из символьного потока", e);
-        }
-    }
-    
-    public static TabulatedFunction readTabulatedFunctionAlt(Reader in) {
-        BufferedReader reader = new BufferedReader(in);
-        try {
-            String line = reader.readLine();
-            if (line == null) {
-                throw new RuntimeException("Пустой поток");
-            }
-            
-            StringTokenizer tokenizer = new StringTokenizer(line);
-            
-            if (!tokenizer.hasMoreTokens()) {
-                throw new RuntimeException("Ожидалось количество точек");
-            }
-            
-            int pointsCount = Integer.parseInt(tokenizer.nextToken());
-            
-            if (pointsCount < 2) {
-                throw new RuntimeException("Некорректное количество точек: " + pointsCount);
-            }
-            
-            double[] xValues = new double[pointsCount];
-            double[] yValues = new double[pointsCount];
-            
-            for (int i = 0; i < pointsCount; i++) {
-                if (!tokenizer.hasMoreTokens()) {
-                    throw new RuntimeException("Ожидалась x-координата точки " + i);
-                }
-                xValues[i] = Double.parseDouble(tokenizer.nextToken());
-                
-                if (!tokenizer.hasMoreTokens()) {
-                    throw new RuntimeException("Ожидалась y-координата точки " + i);
-                }
-                yValues[i] = Double.parseDouble(tokenizer.nextToken());
-            }
-            
-            return new ArrayTabulatedFunction(xValues, yValues);
-            
-        } catch (IOException e) {
-            throw new RuntimeException("Ошибка при чтении табулированной функции из символьного потока", e);
         }
     }
 }
