@@ -2,7 +2,7 @@ package functions;
 
 import java.io.*;
 
-public class ArrayTabulatedFunction implements TabulatedFunction, Serializable, Externalizable  {
+public class ArrayTabulatedFunction implements TabulatedFunction, Externalizable  {
     private FunctionPoint[] points; 
     private int pointsCount;
     private static final double EPSILON = 1e-10;

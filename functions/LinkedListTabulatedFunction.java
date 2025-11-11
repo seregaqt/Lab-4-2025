@@ -2,7 +2,7 @@ package functions;
 
 import java.io.*;
 
-public class LinkedListTabulatedFunction implements TabulatedFunction, Serializable, Externalizable {
+public class LinkedListTabulatedFunction implements TabulatedFunction, Serializable{
     
     private FunctionNode head;
     
@@ -61,29 +61,6 @@ public class LinkedListTabulatedFunction implements TabulatedFunction, Serializa
         
         void setNext(FunctionNode next) {
             this.next = next;
-        }
-    }
-    
-    // Реализация Externalizable
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeInt(pointsCount);
-        FunctionNode current = head.getNext();
-        while (current != head) {
-            out.writeDouble(current.getPoint().getX());
-            out.writeDouble(current.getPoint().getY());
-            current = current.getNext();
-        }
-    }
-    
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        initializeList();
-        int count = in.readInt();
-        for (int i = 0; i < count; i++) {
-            double x = in.readDouble();
-            double y = in.readDouble();
-            addNodeToTail().setPoint(new FunctionPoint(x, y));
         }
     }
     
