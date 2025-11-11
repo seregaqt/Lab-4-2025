@@ -237,47 +237,14 @@ public class Main {
         }
     }
     
-    // Класс только для Serializable (не реализует Externalizable)
-    private static class SerializableOnlyTabulatedFunction implements TabulatedFunction, Serializable {
-        private double[] xValues;
-        private double[] yValues;
-    
-        public SerializableOnlyTabulatedFunction(double[] xValues, double[] yValues) {
-            this.xValues = xValues;
-            this.yValues = yValues;
-        }
-    
-        public double getLeftDomainBorder() { return xValues[0]; }
-        public double getRightDomainBorder() { return xValues[xValues.length - 1]; }
-        public int getPointsCount() { return xValues.length; }
-        public FunctionPoint getPoint(int index) { 
-            return new FunctionPoint(xValues[index], yValues[index]); 
-        }
-       public double getPointX(int index) { return xValues[index]; }
-       public double getPointY(int index) { return yValues[index]; }
-       public double getFunctionValue(double x) {
-           for (int i = 0; i < xValues.length - 1; i++) {
-               if (x >= xValues[i] && x <= xValues[i + 1]) {
-                    return yValues[i] + (yValues[i + 1] - yValues[i]) * (x - xValues[i]) / (xValues[i + 1] - xValues[i]);
-                }
-           }
-           return Double.NaN;
-        }
-    
-        public void setPoint(int index, FunctionPoint point) throws InappropriateFunctionPointException {}
-        public void setPointX(int index, double x) throws InappropriateFunctionPointException {}
-        public void setPointY(int index, double y) {}
-        public void deletePoint(int index) {}
-        public void addPoint(FunctionPoint point) throws InappropriateFunctionPointException {}
-    }
-    
     private static void testSerializableApproach() {
     System.out.println("\n1. Сериализация через Serializable");
     System.out.println("=".repeat(45));
     
-    String filename = "serializable_log_exp.ser";
+    String filename = "serializable_function.ser";
     
     try {
+        // Используем LinkedListTabulatedFunction с Serializable
         Function composition = Functions.composition(new Exp(), new Log(Math.E));
         
         double[] xValues = new double[11];
@@ -287,10 +254,13 @@ public class Main {
             yValues[i] = composition.getFunctionValue(xValues[i]);
         }
         
-        TabulatedFunction originalFunction = new SerializableOnlyTabulatedFunction(xValues, yValues);
+        // LinkedListTabulatedFunction использует только Serializable
+        TabulatedFunction originalFunction = new LinkedListTabulatedFunction(xValues, yValues);
         
         System.out.println("Функция создана:");
         System.out.println("  Тип: " + originalFunction.getClass().getSimpleName());
+        System.out.println("  Количество точек: " + originalFunction.getPointsCount());
+        System.out.println("  Область определения: [" + originalFunction.getLeftDomainBorder() + ", " + originalFunction.getRightDomainBorder() + "]");
         
         try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(filename))) {
             out.writeObject(originalFunction);
@@ -302,16 +272,17 @@ public class Main {
             deserializedFunction = (TabulatedFunction) in.readObject();
         }
         System.out.println("Десериализована из файла");
+        System.out.println("  Тип после десериализации: " + deserializedFunction.getClass().getSimpleName());
         
-        System.out.println("\nСравнение значений:");
-        System.out.printf("%-8s %-12s %-12s%n", "x", "исходная", "десериал.");
+        System.out.println("\nСравнение исходной и десериализованной функции:");
+        System.out.printf("%-8s %-12s %-12s %-10s%n", "x", "исходная", "десериал.", "разница");
         boolean allMatch = true;
         for (int i = 0; i < originalFunction.getPointsCount(); i++) {
             double x = originalFunction.getPointX(i);
             double original = originalFunction.getPointY(i);
             double deserialized = deserializedFunction.getPointY(i);
             double diff = Math.abs(original - deserialized);
-            System.out.printf("%-8.1f %-12.6f %-12.6f", x, original, deserialized);
+            System.out.printf("%-8.1f %-12.6f %-12.6f %-10.6f", x, original, deserialized, diff);
             if (diff > 1e-10) {
                 System.out.print(" ✗");
                 allMatch = false;
@@ -322,13 +293,14 @@ public class Main {
         }
         
         File file = new File(filename);
-        System.out.println("Размер файла Serializable: " + file.length() + " байт");
+        System.out.println("\nРазмер файла Serializable: " + file.length() + " байт");
         
         Files.deleteIfExists(Paths.get(filename));
-        System.out.println("Файл удален");
+        System.out.println("Временный файл удален");
         
     } catch (Exception e) {
         System.out.println("Ошибка: " + e.getMessage());
+        e.printStackTrace();
     }
 }
 
@@ -336,9 +308,10 @@ private static void testExternalizableApproach() {
     System.out.println("\n\n2. Сериализация через Externalizable");
     System.out.println("=".repeat(50));
     
-    String filename = "externalizable_log_exp.ser";
+    String filename = "externalizable_function.ser";
     
     try {
+        // Используем ArrayTabulatedFunction с Externalizable
         Function composition = Functions.composition(new Exp(), new Log(Math.E));
         
         double[] xValues = new double[11];
@@ -348,10 +321,13 @@ private static void testExternalizableApproach() {
             yValues[i] = composition.getFunctionValue(xValues[i]);
         }
         
+        // ArrayTabulatedFunction использует Externalizable
         TabulatedFunction originalFunction = new ArrayTabulatedFunction(xValues, yValues);
         
         System.out.println("Функция создана:");
         System.out.println("  Тип: " + originalFunction.getClass().getSimpleName());
+        System.out.println("  Количество точек: " + originalFunction.getPointsCount());
+        System.out.println("  Область определения: [" + originalFunction.getLeftDomainBorder() + ", " + originalFunction.getRightDomainBorder() + "]");
         
         try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(filename))) {
             out.writeObject(originalFunction);
@@ -363,16 +339,17 @@ private static void testExternalizableApproach() {
             deserializedFunction = (TabulatedFunction) in.readObject();
         }
         System.out.println("Десериализована из файла");
+        System.out.println("  Тип после десериализации: " + deserializedFunction.getClass().getSimpleName());
         
-        System.out.println("\nСравнение значений:");
-        System.out.printf("%-8s %-12s %-12s%n", "x", "исходная", "десериал.");
+        System.out.println("\nСравнение исходной и десериализованной функции:");
+        System.out.printf("%-8s %-12s %-12s %-10s%n", "x", "исходная", "десериал.", "разница");
         boolean allMatch = true;
         for (int i = 0; i < originalFunction.getPointsCount(); i++) {
             double x = originalFunction.getPointX(i);
             double original = originalFunction.getPointY(i);
             double deserialized = deserializedFunction.getPointY(i);
             double diff = Math.abs(original - deserialized);
-            System.out.printf("%-8.1f %-12.6f %-12.6f", x, original, deserialized);
+            System.out.printf("%-8.1f %-12.6f %-12.6f %-10.6f", x, original, deserialized, diff);
             if (diff > 1e-10) {
                 System.out.print(" ✗");
                 allMatch = false;
@@ -383,13 +360,14 @@ private static void testExternalizableApproach() {
         }
         
         File file = new File(filename);
-        System.out.println("Размер файла Externalizable: " + file.length() + " байт");
+        System.out.println("\nРазмер файла Externalizable: " + file.length() + " байт");
         
         Files.deleteIfExists(Paths.get(filename));
-        System.out.println("Файл удален");
+        System.out.println("Временный файл удален");
         
     } catch (Exception e) {
         System.out.println("Ошибка: " + e.getMessage());
+        e.printStackTrace();
     }
 }
 
@@ -397,20 +375,24 @@ private static void compareSerializationMethods() {
     System.out.println("\n\n3. Сравнение методов сериализации");
     System.out.println("=".repeat(45));
     
-    String serializableFile = "compare_serializable.ser";
-    String externalizableFile = "compare_externalizable.ser";
+    String serializableFile = "comparison_serializable.ser";
+    String externalizableFile = "comparison_externalizable.ser";
     
     try {
         double[] xValues = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-        double[] yValues = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        double[] yValues = {0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100}; // x^2
         
-        TabulatedFunction serializableFunc = new SerializableOnlyTabulatedFunction(xValues, yValues);
+        // LinkedListTabulatedFunction - только Serializable
+        TabulatedFunction serializableFunc = new LinkedListTabulatedFunction(xValues, yValues);
+        // ArrayTabulatedFunction - Externalizable  
         TabulatedFunction externalizableFunc = new ArrayTabulatedFunction(xValues, yValues);
         
+        // Сериализация LinkedListTabulatedFunction (Serializable)
         try (ObjectOutputStream out1 = new ObjectOutputStream(new FileOutputStream(serializableFile))) {
             out1.writeObject(serializableFunc);
         }
         
+        // Сериализация ArrayTabulatedFunction (Externalizable)
         try (ObjectOutputStream out2 = new ObjectOutputStream(new FileOutputStream(externalizableFile))) {
             out2.writeObject(externalizableFunc);
         }
@@ -420,21 +402,22 @@ private static void compareSerializationMethods() {
         
         long serializableSize = serializable.length();
         long externalizableSize = externalizable.length();
-        long difference = serializableSize - externalizableSize;
+        long difference = Math.abs(serializableSize - externalizableSize);
         double percent = (1 - (double)externalizableSize / serializableSize) * 100;
         
         System.out.println("Размеры файлов:");
-        System.out.println("  Serializable: " + serializableSize + " байт");
-        System.out.println("  Externalizable: " + externalizableSize + " байт");
+        System.out.println("  Serializable (LinkedList): " + serializableSize + " байт");
+        System.out.println("  Externalizable (Array): " + externalizableSize + " байт");
         System.out.println("  Разница: " + difference + " байт");
-        System.out.printf("  Экономия: %.1f%%\n", percent);
+        System.out.printf("  Экономия: %.1f%%\n", Math.abs(percent));
         
         Files.deleteIfExists(Paths.get(serializableFile));
         Files.deleteIfExists(Paths.get(externalizableFile));
-        System.out.println("Файлы удалены");
+        System.out.println("\nВременные файлы удалены");
         
     } catch (Exception e) {
         System.out.println("Ошибка: " + e.getMessage());
+        e.printStackTrace();
     }
 }
     
@@ -442,4 +425,5 @@ private static void compareSerializationMethods() {
         test1();
         test2();
     }
+
 }
